@@ -1,23 +1,19 @@
-name: Build DEB
-
-on:
-  push:
-    branches: ["main"]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Build deb
         run: |
           rm -rf pkg
-          mkdir -p pkg
-          cp -r DEBIAN usr pkg/
-          dpkg-deb --build pkg apk-installer.deb
+          mkdir -p pkg/DEBIAN
+          mkdir -p pkg/usr
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apk-installer
-          path: apk-installer.deb
+          # Copy package payload
+          cp -r usr/* pkg/usr/
+
+          # Copy control files
+          cp -r DEBIAN/* pkg/DEBIAN/
+
+          # Fix required permissions
+          chmod 755 pkg/DEBIAN
+          chmod 644 pkg/DEBIAN/control
+          chmod 755 pkg/usr/bin/apk-installer
+
+          # Build deb properly
+          dpkg-deb --root-owner-group --build pkg apk-installer.deb
