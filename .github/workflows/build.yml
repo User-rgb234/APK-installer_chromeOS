@@ -12,17 +12,26 @@ jobs:
 
       - name: Build deb
         run: |
+          set -eux
           rm -rf pkg
-          mkdir -p pkg
-          cp -r DEBIAN pkg/
-          cp -r usr pkg/
+          mkdir -p pkg/DEBIAN pkg/usr
+
+          # Copy ONLY control file (prevents usr/ leaking into control.tar)
+          cp DEBIAN/control pkg/DEBIAN/control
+
+          # Copy payload
+          cp -r usr/* pkg/usr/
+
+          # Safety: ensure no usr inside DEBIAN
+          rm -rf pkg/DEBIAN/usr
+
           chmod 755 pkg/DEBIAN
           chmod 644 pkg/DEBIAN/control
           chmod 755 pkg/usr/bin/apk-installer
+
           dpkg-deb --root-owner-group --build pkg apk-installer.deb
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: apk-installer
           path: apk-installer.deb
